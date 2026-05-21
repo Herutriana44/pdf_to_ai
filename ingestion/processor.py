@@ -2,9 +2,9 @@ import os
 import fitz
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 # Load .env early so env vars are available when module is imported directly
 load_dotenv()
@@ -13,7 +13,11 @@ QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
 COLLECTION_NAME = "pdf_docs"
 
-# Fix: lazy-init so objects are created after env vars are loaded
+# all-MiniLM-L6-v2: lightweight open-source model, runs locally, 384-dim vectors
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+VECTOR_SIZE = 384
+
+# Lazy-init so objects are created after env vars are loaded
 _client = None
 _embeddings = None
 
@@ -28,11 +32,14 @@ def get_client() -> QdrantClient:
     return _client
 
 
-def get_embeddings() -> GoogleGenerativeAIEmbeddings:
+def get_embeddings() -> HuggingFaceEmbeddings:
     global _embeddings
     if _embeddings is None:
-        # gemini-embedding-001 produces 3072-dim vectors
-        _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+        _embeddings = HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL,
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
+        )
     return _embeddings
 
 
@@ -41,7 +48,7 @@ def init_collection():
     if not client.collection_exists(COLLECTION_NAME):
         client.create_collection(
             collection_name=COLLECTION_NAME,
-            vectors_config=models.VectorParams(size=3072, distance=models.Distance.COSINE),
+            vectors_config=models.VectorParams(size=VECTOR_SIZE, distance=models.Distance.COSINE),
         )
 
 

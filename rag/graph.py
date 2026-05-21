@@ -3,7 +3,8 @@ from typing import TypedDict, List
 from dotenv import load_dotenv
 from langgraph.graph import StateGraph, END
 from qdrant_client import QdrantClient
-from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.prompts import ChatPromptTemplate
 
 # Load .env early so env vars are available when module is imported directly
@@ -13,7 +14,10 @@ QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
 COLLECTION_NAME = "pdf_docs"
 
-# Fix: lazy-init so objects are created after env vars are loaded
+# Must match the model used in ingestion/processor.py
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+
+# Lazy-init so objects are created after env vars are loaded
 _qdrant_client = None
 _llm = None
 _embeddings = None
@@ -36,11 +40,14 @@ def get_llm() -> ChatGoogleGenerativeAI:
     return _llm
 
 
-def get_embeddings() -> GoogleGenerativeAIEmbeddings:
+def get_embeddings() -> HuggingFaceEmbeddings:
     global _embeddings
     if _embeddings is None:
-        # gemini-embedding-001 produces 3072-dim vectors
-        _embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+        _embeddings = HuggingFaceEmbeddings(
+            model_name=EMBEDDING_MODEL,
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
+        )
     return _embeddings
 
 
