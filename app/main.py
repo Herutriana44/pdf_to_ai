@@ -51,6 +51,10 @@ async def generate_stream(query: str):
     # rag_app.invoke is blocking — run in thread to avoid blocking the event loop
     result = await asyncio.to_thread(rag_app.invoke, {"query": query})
     answer = result.get("answer", "")
+    print(f"DEBUG: Answer length: {len(answer)}")
+    if not answer:
+        yield "Error: No answer generated."
+        return
     for char in answer:
         yield char
         await asyncio.sleep(0.01)
