@@ -12,6 +12,7 @@ load_dotenv()
 
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
+GEMINI_MODEL_ID = os.getenv("GEMINI_MODEL_ID", "")
 COLLECTION_NAME = "pdf_docs"
 
 # Must match the model used in ingestion/processor.py
@@ -36,7 +37,7 @@ def get_qdrant_client() -> QdrantClient:
 def get_llm() -> ChatGoogleGenerativeAI:
     global _llm
     if _llm is None:
-        _llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
+        _llm = ChatGoogleGenerativeAI(model=GEMINI_MODEL_ID)
     return _llm
 
 
