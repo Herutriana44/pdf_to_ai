@@ -157,7 +157,7 @@ def retrieve_context(state):
 
         hits = get_qdrant_client().query_points(
             collection_name=COLLECTION_NAME,
-            query_vector=vector,
+            query=vector,
             limit=4
         )
 
