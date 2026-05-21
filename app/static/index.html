@@ -57,8 +57,13 @@
             
             while (true) {
                 const {done, value} = await reader.read();
-                if (done) break;
-                resDiv.innerText += decoder.decode(value);
+                if (done) {
+                    console.log("Stream finished");
+                    break;
+                }
+                const chunk = decoder.decode(value, {stream: true});
+                console.log("Received chunk:", chunk);
+                resDiv.innerText += chunk;
             }
         }
     </script>
