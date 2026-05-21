@@ -317,13 +317,13 @@ def retrieval_agent(state):
 
 def generation_agent(state):
 
-    state.update(
-        generate_answer(state)
-    )
+    gen_result = generate_answer(state)
+    print(f"[DEBUG] gen_result: {gen_result}")
+    state.update(gen_result)
 
-    state.update(
-        evaluate_hallucination(state)
-    )
+    eval_result = evaluate_hallucination(state)
+    print(f"[DEBUG] eval_result: {eval_result}")
+    state.update(eval_result)
 
     return state
 
