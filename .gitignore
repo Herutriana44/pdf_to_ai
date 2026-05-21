@@ -1,0 +1,20 @@
+# System files
+.env
+.DS_Store
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Dependencies
+venv/
+env/
+.venv/
+
+# Docker/Infrastructure
+qdrant_data/
+temp_*
+
+# IDEs
+.vscode/
+.idea/
