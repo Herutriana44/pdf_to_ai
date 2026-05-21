@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pymupdf
+marker-pdf
+langchain
+langchain-community
+langchain-text-splitters
+qdrant-client
+langgraph
+ragas
+pydantic
+python-dotenv
+httpx

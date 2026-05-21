@@ -1,0 +1,40 @@
+{
+	"info": {
+		"name": "PDF-to-AI RAG API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"url": "http://localhost:8000/health"
+			}
+		},
+		{
+			"name": "Ingest PDF",
+			"request": {
+				"method": "POST",
+				"url": "http://localhost:8000/ingest",
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{ "key": "file", "type": "file" }
+					]
+				}
+			}
+		},
+		{
+			"name": "Query RAG",
+			"request": {
+				"method": "POST",
+				"url": "http://localhost:8000/query",
+				"header": [{"key": "Content-Type", "value": "application/json"}],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"query\": \"Your question here?\"}"
+				}
+			}
+		}
+	]
+}

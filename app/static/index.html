@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDF-to-AI Chat</title>
+</head>
+<body>
+    <h1>PDF-to-AI Chat</h1>
+    <input type="text" id="query" placeholder="Ask a question...">
+    <button onclick="ask()">Ask</button>
+    <div id="response" style="margin-top:20px; white-space: pre-wrap;"></div>
+
+    <script>
+        async function ask() {
+            const query = document.getElementById('query').value;
+            const resDiv = document.getElementById('response');
+            resDiv.innerText = "Thinking...";
+            
+            const response = await fetch('/query', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({query: query})
+            });
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            resDiv.innerText = "";
+            
+            while (true) {
+                const {done, value} = await reader.read();
+                if (done) break;
+                resDiv.innerText += decoder.decode(value);
+            }
+        }
+    </script>
+</body>
+</html>
