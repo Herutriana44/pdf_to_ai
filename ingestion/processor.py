@@ -1,4 +1,5 @@
 import os
+import uuid
 import fitz
 from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -6,23 +7,20 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
-# Load .env early so env vars are available when module is imported directly
 load_dotenv()
 
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY", "")
 COLLECTION_NAME = "pdf_docs"
 
-# all-MiniLM-L6-v2: lightweight open-source model, runs locally, 384-dim vectors
+# Embedding model
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-VECTOR_SIZE = 384
 
-# Lazy-init so objects are created after env vars are loaded
 _client = None
 _embeddings = None
 
 
-def get_client() -> QdrantClient:
+def get_client():
     global _client
     if _client is None:
         _client = QdrantClient(
@@ -32,7 +30,7 @@ def get_client() -> QdrantClient:
     return _client
 
 
-def get_embeddings() -> HuggingFaceEmbeddings:
+def get_embeddings():
     global _embeddings
     if _embeddings is None:
         _embeddings = HuggingFaceEmbeddings(
@@ -43,39 +41,129 @@ def get_embeddings() -> HuggingFaceEmbeddings:
     return _embeddings
 
 
+def get_vector_size():
+    """
+    Detect embedding dimension automatically.
+    """
+    embeddings = get_embeddings()
+
+    sample_vector = embeddings.embed_query("test")
+    return len(sample_vector)
+
+
 def init_collection():
     client = get_client()
-    if not client.collection_exists(COLLECTION_NAME):
+    vector_size = get_vector_size()
+
+    if client.collection_exists(COLLECTION_NAME):
+
+        collection_info = client.get_collection(COLLECTION_NAME)
+
+        existing_size = (
+            collection_info.config.params.vectors.size
+        )
+
+        if existing_size != vector_size:
+            print(
+                f"[processor] Vector mismatch "
+                f"(existing={existing_size}, new={vector_size})"
+            )
+
+            print(
+                "[processor] Recreating collection..."
+            )
+
+            client.delete_collection(
+                collection_name=COLLECTION_NAME
+            )
+
+            client.create_collection(
+                collection_name=COLLECTION_NAME,
+                vectors_config=models.VectorParams(
+                    size=vector_size,
+                    distance=models.Distance.COSINE,
+                ),
+            )
+
+    else:
         client.create_collection(
             collection_name=COLLECTION_NAME,
-            vectors_config=models.VectorParams(size=VECTOR_SIZE, distance=models.Distance.COSINE),
+            vectors_config=models.VectorParams(
+                size=vector_size,
+                distance=models.Distance.COSINE,
+            ),
         )
 
 
-def process_and_index_pdf(file_path: str) -> bool:
+def process_and_index_pdf(file_path: str):
+
     try:
         init_collection()
 
+        # Extract PDF text
         doc = fitz.open(file_path)
-        text = "".join([page.get_text() for page in doc])
+
+        text = ""
+
+        for page in doc:
+            text += page.get_text()
+
         doc.close()
 
         if not text.strip():
-            raise ValueError("PDF contains no extractable text.")
+            raise ValueError(
+                "PDF contains no extractable text."
+            )
 
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
-        chunks = text_splitter.split_text(text)
+        # Split text
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000,
+            chunk_overlap=200
+        )
+
+        chunks = splitter.split_text(text)
+
+        if len(chunks) == 0:
+            raise ValueError(
+                "No chunks generated"
+            )
 
         embeddings = get_embeddings()
-        vectors = embeddings.embed_documents(chunks)
 
-        points = [
-            models.PointStruct(id=i, vector=vectors[i], payload={"text": chunks[i]})
-            for i in range(len(chunks))
-        ]
-        get_client().upsert(collection_name=COLLECTION_NAME, points=points)
+        vectors = embeddings.embed_documents(
+            chunks
+        )
+
+        # Create points
+        points = []
+
+        for chunk, vector in zip(
+            chunks,
+            vectors
+        ):
+            points.append(
+                models.PointStruct(
+                    id=str(uuid.uuid4()),
+                    vector=vector,
+                    payload={
+                        "text": chunk
+                    }
+                )
+            )
+
+        get_client().upsert(
+            collection_name=COLLECTION_NAME,
+            points=points
+        )
+
+        print(
+            f"[processor] Indexed {len(points)} chunks"
+        )
+
         return True
 
     except Exception as e:
-        print(f"[processor] Error indexing PDF: {e}")
+        print(
+            f"[processor] Error indexing PDF: {e}"
+        )
         return False
