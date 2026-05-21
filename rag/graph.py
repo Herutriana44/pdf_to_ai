@@ -12,7 +12,7 @@ from datasets import Dataset
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 COLLECTION_NAME = "pdf_docs"
 qdrant_client = QdrantClient(url=QDRANT_URL)
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash")
+llm = ChatGoogleGenerativeAI(model="gemini-3.1-flash-lite-preview")
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
 
 class AgentState(TypedDict):
