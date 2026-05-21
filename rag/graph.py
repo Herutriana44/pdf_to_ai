@@ -161,6 +161,8 @@ def retrieve_context(state):
             limit=4
         )
 
+        print(f"[LOG] hits payload result {hits}")
+
         for hit in hits:
 
             text = hit.payload.get(
