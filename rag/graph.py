@@ -158,7 +158,9 @@ def retrieve_context(state):
         hits = get_qdrant_client().query_points(
             collection_name=COLLECTION_NAME,
             query=vector,
-            limit=4
+            limit=4,
+            with_vectors=True,
+            with_payload=True
         )
 
         print(f"[LOG] hits payload result {hits}")
