@@ -165,7 +165,7 @@ def retrieve_context(state):
 
         print(f"[LOG] hits payload result {hits}")
 
-        for hit in hits:
+        for hit in hits.points:
 
             text = hit.payload.get(
                 "text",
