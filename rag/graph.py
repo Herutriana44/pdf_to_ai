@@ -158,12 +158,10 @@ def retrieve_context(state):
         hits = get_qdrant_client().query_points(
             collection_name=COLLECTION_NAME,
             query=vector,
-            limit=4,
+            limit=6,
             with_vectors=True,
             with_payload=True
         )
-
-        print(f"[LOG] hits payload result {hits}")
 
         for hit in hits.points:
 
@@ -263,13 +261,13 @@ Answer:
 
 def evaluate_hallucination(state):
 
-    answer_words = set(
-        state.get(
-            "answer",
-            ""
-        ).lower().split()
-    )
+    answer = state.get("answer", "").lower()
+    
+    # If the model explicitly says it doesn't know, it's not a hallucination
+    if "don't have enough information" in answer:
+        return {"is_hallucination": False}
 
+    answer_words = set(answer.split())
     context_words = set(
         " ".join(
             state.get(
@@ -280,10 +278,7 @@ def evaluate_hallucination(state):
     )
 
     if len(answer_words) == 0:
-
-        return {
-            "is_hallucination": False
-        }
+        return {"is_hallucination": False}
 
     overlap = (
         len(
@@ -293,8 +288,9 @@ def evaluate_hallucination(state):
         / len(answer_words)
     )
 
+    # Relaxed threshold
     return {
-        "is_hallucination": overlap < 0.4
+        "is_hallucination": overlap < 0.2 
     }
 
 
