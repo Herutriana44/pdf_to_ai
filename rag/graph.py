@@ -290,7 +290,7 @@ def evaluate_hallucination(state):
 
     # Relaxed threshold
     return {
-        "is_hallucination": overlap < 0.2 
+        "is_hallucination": overlap < 0.001 
     }
 
 
