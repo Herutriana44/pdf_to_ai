@@ -155,7 +155,7 @@ def retrieve_context(state):
 
         vector = get_embeddings().embed_query(q)
 
-        hits = get_qdrant_client().search(
+        hits = get_qdrant_client().query_points(
             collection_name=COLLECTION_NAME,
             query_vector=vector,
             limit=4
