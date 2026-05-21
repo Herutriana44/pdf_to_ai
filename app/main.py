@@ -48,25 +48,34 @@ async def ingest_pdf(file: UploadFile = File(...)):
 
 
 async def generate_stream(query: str):
-    # rag_app.invoke is blocking — run in thread to avoid blocking the event loop
+    # 1. Jalankan graph RAG sampai selesai
     result = await asyncio.to_thread(rag_app.invoke, {"query": query})
     answer = result.get("answer", "")
-    print(f"DEBUG: Answer length: {len(answer)}")
+    
+    # Cek di log server apakah backend sebenarnya menghasilkan jawaban
+    print(f"[SERVER DEBUG] Answer dari RAG: {answer}")
+    
     if not answer:
-        yield "Error: No answer generated."
+        yield "I don't have enough information.".encode('utf-8')
         return
-    for char in answer:
-        yield char
-        await asyncio.sleep(0.01)
 
+    # 2. Kirim per kata atau per beberapa karakter agar chunk lebih stabil
+    # Mengirim per kata jauh lebih aman untuk streaming berbasis teks biasa
+    words = answer.split(" ")
+    for i, word in enumerate(words):
+        # Tambahkan spasi kembali kecuali untuk kata pertama
+        chunk = f" {word}" if i > 0 else word
+        yield chunk.encode('utf-8')  # Wajib di-encode ke bytes
+        await asyncio.sleep(0.02)   # Delay sedikit untuk efek mengetik
 
 @app.post("/query")
 async def query_rag(query: dict = Body(...)):
     query_text = query.get("query", "")
     if not query_text:
         raise HTTPException(status_code=400, detail="'query' field is required.")
-    return StreamingResponse(generate_stream(query_text), media_type="text/event-stream")
-
-
+    
+    # Gunakan media_type text/plain atau text/event-stream
+    return StreamingResponse(generate_stream(query_text), media_type="text/plain")
+    
 if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
