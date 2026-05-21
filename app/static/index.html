@@ -4,12 +4,42 @@
     <title>PDF-to-AI Chat</title>
 </head>
 <body>
-    <h1>PDF-to-AI Chat</h1>
-    <input type="text" id="query" placeholder="Ask a question...">
-    <button onclick="ask()">Ask</button>
-    <div id="response" style="margin-top:20px; white-space: pre-wrap;"></div>
+    <h1>PDF-to-AI</h1>
+    
+    <section>
+        <h2>Upload PDF</h2>
+        <input type="file" id="pdfFile" accept="application/pdf">
+        <button onclick="upload()">Upload</button>
+        <p id="uploadStatus"></p>
+    </section>
+
+    <hr>
+
+    <section>
+        <h2>Chat</h2>
+        <input type="text" id="query" placeholder="Ask a question...">
+        <button onclick="ask()">Ask</button>
+        <div id="response" style="margin-top:20px; white-space: pre-wrap;"></div>
+    </section>
 
     <script>
+        async function upload() {
+            const fileInput = document.getElementById('pdfFile');
+            const status = document.getElementById('uploadStatus');
+            if (fileInput.files.length === 0) return alert("Select a file");
+            
+            status.innerText = "Uploading...";
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            const response = await fetch('/ingest', {
+                method: 'POST',
+                body: formData
+            });
+            
+            status.innerText = response.ok ? "Upload success!" : "Upload failed";
+        }
+
         async function ask() {
             const query = document.getElementById('query').value;
             const resDiv = document.getElementById('response');

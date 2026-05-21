@@ -299,7 +299,7 @@ def evaluate_hallucination(state):
 
 
 def retrieval_agent(state):
-
+    print(f"[DEBUG] Entered retrieval_agent")
     state.update(
         decompose_query(state)
     )
@@ -316,7 +316,7 @@ def retrieval_agent(state):
 
 
 def generation_agent(state):
-
+    print(f"[DEBUG] Entered generation_agent")
     gen_result = generate_answer(state)
     print(f"[DEBUG] gen_result: {gen_result}")
     state.update(gen_result)
